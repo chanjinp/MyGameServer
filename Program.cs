@@ -6,6 +6,14 @@
         {
             GameServer gameServer = new GameServer();
 
+            gameServer.Init();
+            gameServer.Bind(9999);
+
+            ThreadStart threadStart = new ThreadStart(gameServer.AcceptMultiClients);
+            Thread thread = new Thread(threadStart);
+
+            thread.Start();
+
         }
     }
 }

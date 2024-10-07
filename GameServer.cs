@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
+using System.Net.Security;
 
 namespace MyGameServer
 {
@@ -18,7 +19,7 @@ namespace MyGameServer
 
         public IPAddress GetIPAddress()
         {
-            IPHostEntry myHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            /*IPHostEntry myHostInfo = Dns.GetHostEntry(Dns.GetHostName());
 
             foreach (IPAddress ip in myHostInfo.AddressList)
             {
@@ -26,7 +27,7 @@ namespace MyGameServer
                 {
                     return ip;
                 }
-            }
+            }*/
 
             return IPAddress.Parse("127.0.0.1"); //없는 경우 로컬 통신 IP로 사용
         }
@@ -41,12 +42,12 @@ namespace MyGameServer
             m_clientList = new List<SocketInfo>();
 
         }
-        public void Bind(int port)
+        public void Bind(int port) //Test Server Port = 9999
         {
             this.port = port;
             IPEndPoint serverEP = new IPEndPoint(GetIPAddress(), port);
 
-            Console.WriteLine("=========== Server Binding... [Port]: {0} ===========", port);
+            Console.WriteLine("=========== Server Binding... [IP]: {0}, [Port]: {1} ===========", GetIPAddress(), port);
             m_serverSocket.Bind(serverEP); // 목적지 설정과 함께 설정
 
             Console.WriteLine("=========== Server Listening ===========");
@@ -85,9 +86,18 @@ namespace MyGameServer
             try
             {
                 client = m_serverSocket.Accept(); //서버로부터 받은 소켓 사용
+
                 clientInfo = new SocketInfo(client, true, 1024);
 
+                clientInfo.ClearBuffer(); // 버퍼에 0으로 채워주기
+
                 m_clientList.Add(clientInfo);
+
+                Console.WriteLine("Accept Client");
+
+                RecieveMsg(clientInfo); //TODO 수정 필요 -> 객체 지향적이지 않다고 판단 -> AcceptClient라는 함수에 메시지 수신까지?
+
+
             }
             catch (Exception ex)
             {
@@ -95,17 +105,61 @@ namespace MyGameServer
             }
 
         }
-
-        //TODO 서버를 통한 브로드캐스트 전송 예제 간단히 테스트하기
-        public void Send(string message)
+        public void RecieveMsg(SocketInfo clientInfo)
         {
-            byte[] msg = Encoding.UTF8.GetBytes(message);
 
-            NetworkStream stream = new NetworkStream(m_serverSocket);
+            Socket client = clientInfo.GetClientSocket();
+            byte[] buffer = clientInfo.GetBuffer();
+            client.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(AsyncCallBack), clientInfo);
 
+        }
+        private void AsyncCallBack(IAsyncResult ar)
+        {
+            SocketInfo clientInfo = (SocketInfo)ar.AsyncState;
+
+            Socket client = clientInfo.GetClientSocket();
+            byte[] buffer = clientInfo.GetBuffer();
+
+            int receiveByte = client.EndReceive(ar);
+
+            string msg = "";
+
+            if (receiveByte > 0)
+            {
+                msg = Encoding.UTF8.GetString(buffer, 0, receiveByte);
+                Console.WriteLine("[ClientMsg]: " + msg);
+            }
+
+            if (msg == "Exit")
+            {
+                Console.WriteLine("[Disconnect]");
+                //DisConnectClient(client);
+            }
+
+        }
+
+        public void BroadCastMessage(string message) //연결된 클라이언트 전체에게 메시지를 보낸다.
+        {
             for (int i = 0; i < m_clientList.Count; i++)
             {
-                m_clientList[i].GetClientSocket().Send(msg);
+                Send(m_clientList[i].GetClientSocket(), message);
+            }
+        }
+
+        //TODO 서버를 통한 브로드캐스트 전송 예제 간단히 테스트하기
+        public void Send(Socket target, string message)
+        {
+            try
+            {
+                byte[] msg = Encoding.UTF8.GetBytes(message);
+
+                NetworkStream stream = new NetworkStream(target);
+
+                stream.Write(msg, 0, msg.Length);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[Send Msg Error]: " + ex);
             }
         }
     }

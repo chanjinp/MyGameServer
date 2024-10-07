@@ -24,6 +24,10 @@ namespace MyGameServer
         {
             return m_clientSocket;
         }
+        public byte[] GetBuffer()
+        {
+            return bytes;
+        }
 
         public void ClearBuffer()
         {
