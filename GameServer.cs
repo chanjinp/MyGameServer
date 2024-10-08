@@ -68,7 +68,7 @@ namespace MyGameServer
         {
             SocketInfo clientInfo = AcceptClient();
 
-            /*while (clientInfo != null)
+            while (clientInfo != null)
             {
                 RecieveMsg(clientInfo);
 
@@ -76,9 +76,8 @@ namespace MyGameServer
                 string msg = Console.ReadLine();
 
                 BroadCastMessage(msg);
-            }*/
+            }
 
-            RecieveMsg(clientInfo);
         }
 
         public void AcceptMultiClients()
@@ -161,7 +160,6 @@ namespace MyGameServer
             }
         }
 
-        //TODO 서버를 통한 브로드캐스트 전송 예제 간단히 테스트하기
         public void Send(Socket target, string message)
         {
             try
