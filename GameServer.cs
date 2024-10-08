@@ -64,6 +64,22 @@ namespace MyGameServer
 
             isStarted = false;
         }
+        public void Run()
+        {
+            SocketInfo clientInfo = AcceptClient();
+
+            /*while (clientInfo != null)
+            {
+                RecieveMsg(clientInfo);
+
+                Console.WriteLine("[Input Message]: ");
+                string msg = Console.ReadLine();
+
+                BroadCastMessage(msg);
+            }*/
+
+            RecieveMsg(clientInfo);
+        }
 
         public void AcceptMultiClients()
         {
@@ -71,14 +87,14 @@ namespace MyGameServer
             {
                 if (m_clientList.Count == tryAcceptCount)
                 {
-                    ThreadStart threadStart = new ThreadStart(AcceptClient);
+                    ThreadStart threadStart = new ThreadStart(Run);
                     tryAcceptCount++; //접속에 시도를 했으니 증가
                     Thread thread = new Thread(threadStart);
                     thread.Start();
                 }
             }
         }
-        public void AcceptClient()
+        public SocketInfo AcceptClient()
         {
             Socket client = null;
             SocketInfo clientInfo = null;
@@ -95,14 +111,13 @@ namespace MyGameServer
 
                 Console.WriteLine("Accept Client");
 
-                RecieveMsg(clientInfo); //TODO 수정 필요 -> 객체 지향적이지 않다고 판단 -> AcceptClient라는 함수에 메시지 수신까지?
-
-
             }
             catch (Exception ex)
             {
                 Console.WriteLine("[AcceptClient Error]: " + ex);
             }
+
+            return clientInfo;
 
         }
         public void RecieveMsg(SocketInfo clientInfo)
